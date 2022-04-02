@@ -1,19 +1,29 @@
+import 'dart:html';
+
 import 'package:eisenhower/task.dart';
-import 'dart:math';
+import 'package:hive_flutter/adapters.dart';
+import 'package:hive/hive.dart';
+import 'boxes.dart';
 
 class TaskManager {
-  TaskManager();
+  static final TaskManager _manager = TaskManager._internal();
 
-  final List<Task> _list = [];
+  factory TaskManager() {
+    return _manager;
+  }
+
+  TaskManager._internal();
+
+  List<Task> _list = [];
 
   List<Task> get doIt =>
-      _list.where((element) => element.type == Type.doIt).toList();
+      _list.where((element) => element.type == TaskType.doIt).toList();
   List<Task> get delegate =>
-      _list.where((element) => element.type == Type.delegate).toList();
+      _list.where((element) => element.type == TaskType.delegate).toList();
   List<Task> get decide =>
-      _list.where((element) => element.type == Type.decide).toList();
+      _list.where((element) => element.type == TaskType.decide).toList();
   List<Task> get delete =>
-      _list.where((element) => element.type == Type.delete).toList();
+      _list.where((element) => element.type == TaskType.delete).toList();
 
   Task _createTask(title, desc, type) {
     final Task task = Task(title, desc, type);
@@ -22,8 +32,23 @@ class TaskManager {
 
   void addTask(title, desc, type) {
     final task = _createTask(title, desc, type);
+    final box = Hive.box<Task>('tasks');
+    box.add(task);
     _list.add(task);
-    print('Task added for: ' + title + " " + desc);
+    var task1 = box.get(0);
+
+    print('Task added for: ' + task1!.desc + " " + desc);
+  }
+
+  void updateList() {
+    final box = Hive.box<Task>('tasks');
+    if (box.isNotEmpty) {
+      var it = box.values.iterator;
+      while (it.moveNext()) {
+        _list.add(
+            _createTask(it.current.title, it.current.desc, it.current.type));
+      }
+    }
   }
 
   void deleteTask(task) {

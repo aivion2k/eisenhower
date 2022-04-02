@@ -4,8 +4,22 @@ import 'dart:html';
 import 'package:eisenhower/list.dart';
 import 'package:eisenhower/task.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_titled_container/flutter_titled_container.dart';
+import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+  Hive.registerAdapter(TaskAdapter());
+  Hive.registerAdapter(TaskTypeAdapter());
+  await Hive.openBox<Task>('tasks');
+
+  TaskManager taskManager = TaskManager();
+  taskManager.updateList();
+
   runApp(const MyApp());
 }
 
@@ -17,9 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Eisenhover',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.lightBlue,
-      ),
+      theme: ThemeData(primaryColor: Colors.black, primarySwatch: Colors.blue),
       home: const MyHomePage(title: 'Eisenhover'),
     );
   }
@@ -41,14 +53,14 @@ class _MyHomePageState extends State<MyHomePage> {
   final taskTitle = TextEditingController();
   final taskDescription = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  Type ddVal = Type.doIt;
+  TaskType ddVal = TaskType.doIt;
 
   @override
   Widget build(BuildContext context) => _MyHomePageView(
         state: this,
       );
 
-  void _changeValue(Type newValue) {
+  void _changeValue(TaskType newValue) {
     ddVal = newValue;
   }
 
@@ -101,38 +113,64 @@ class _MyHomePageView extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                              child: Container(
-                            color: Colors.green,
-                            child: ListView(
-                              children: [
-                                ...state.taskManager.doIt
-                                    .map(
-                                      (element) => ListTile(
-                                        title: Text(element.title),
-                                        subtitle: Text(element.desc),
-                                      ),
-                                    )
-                                    .toList(),
-                              ],
+                              child: TitledContainer(
+                            title: 'Do it',
+                            fontSize: 20,
+                            titleColor: Colors.green,
+                            textAlign: TextAlignTitledContainer.Center,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(color: Colors.green, width: 3),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(10.0),
+                                ),
+                              ),
+                              child: ListView(
+                                children: [
+                                  ...state.taskManager.doIt
+                                      .map(
+                                        (element) => ListTile(
+                                          title: Text(element.title),
+                                          subtitle: Text(element.desc),
+                                          onTap: () => state.taskManager.doIt
+                                              .remove(element),
+                                        ),
+                                      )
+                                      .toList(),
+                                ],
+                              ),
                             ),
                           )),
                           const Padding(
                             padding: EdgeInsets.all(10),
                           ),
                           Expanded(
-                              child: Container(
-                            color: Colors.cyan,
-                            child: ListView(
-                              children: [
-                                ...state.taskManager.decide
-                                    .map(
-                                      (element) => ListTile(
-                                        title: Text(element.title),
-                                        subtitle: Text(element.desc),
-                                      ),
-                                    )
-                                    .toList(),
-                              ],
+                              child: TitledContainer(
+                            title: 'Delegate',
+                            fontSize: 20,
+                            titleColor: Colors.blue,
+                            textAlign: TextAlignTitledContainer.Center,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(color: Colors.blue, width: 3),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(10.0),
+                                ),
+                              ),
+                              child: ListView(
+                                children: [
+                                  ...state.taskManager.delegate
+                                      .map(
+                                        (element) => ListTile(
+                                          title: Text(element.title),
+                                          subtitle: Text(element.desc),
+                                        ),
+                                      )
+                                      .toList(),
+                                ],
+                              ),
                             ),
                           )),
                         ],
@@ -145,38 +183,61 @@ class _MyHomePageView extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                              child: Container(
-                            color: Colors.red,
-                            child: ListView(
-                              children: [
-                                ...state.taskManager.delegate
-                                    .map(
-                                      (element) => ListTile(
-                                        title: Text(element.title),
-                                        subtitle: Text(element.desc),
-                                      ),
-                                    )
-                                    .toList(),
-                              ],
+                              child: TitledContainer(
+                            title: 'Decide',
+                            fontSize: 20,
+                            titleColor: Colors.red,
+                            textAlign: TextAlignTitledContainer.Center,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.red, width: 3),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(10.0),
+                                ),
+                              ),
+                              child: ListView(
+                                children: [
+                                  ...state.taskManager.decide
+                                      .map(
+                                        (element) => ListTile(
+                                          title: Text(element.title),
+                                          subtitle: Text(element.desc),
+                                        ),
+                                      )
+                                      .toList(),
+                                ],
+                              ),
                             ),
                           )),
                           const Padding(
                             padding: EdgeInsets.all(10),
                           ),
                           Expanded(
-                              child: Container(
-                            color: Colors.grey,
-                            child: ListView(
-                              children: [
-                                ...state.taskManager.delete
-                                    .map(
-                                      (element) => ListTile(
-                                        title: Text(element.title),
-                                        subtitle: Text(element.desc),
-                                      ),
-                                    )
-                                    .toList(),
-                              ],
+                              child: TitledContainer(
+                            title: 'Delete',
+                            fontSize: 20,
+                            titleColor: Colors.grey,
+                            textAlign: TextAlignTitledContainer.Center,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(color: Colors.grey, width: 3),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(10.0),
+                                ),
+                              ),
+                              child: ListView(
+                                children: [
+                                  ...state.taskManager.delete
+                                      .map(
+                                        (element) => ListTile(
+                                          title: Text(element.title),
+                                          subtitle: Text(element.desc),
+                                        ),
+                                      )
+                                      .toList(),
+                                ],
+                              ),
                             ),
                           )),
                         ],
@@ -217,11 +278,15 @@ class _FormPageView extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Title'),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(30),
+                  ],
+                  decoration: const InputDecoration(
+                      labelText: 'Title', counterText: 'Max 30 characters'),
                   controller: state.taskTitle,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter some text';
+                      return 'Please enter a title';
                     }
                     return null;
                   },
@@ -230,22 +295,23 @@ class _FormPageView extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Description'),
                   controller: state.taskDescription,
                 ),
-                DropdownButton<Type>(
+                DropdownButton<TaskType>(
                     value: state.ddVal,
                     onChanged: (value) => state._changeValue(value!),
-                    items: Type.values.map((Type type) {
-                      return DropdownMenuItem<Type>(
+                    items: TaskType.values.map((TaskType type) {
+                      return DropdownMenuItem<TaskType>(
                           value: type, child: Text(type.toString()));
                     }).toList()),
                 ElevatedButton(
                   onPressed: () {
-                    if (state._formKey.currentState!.validate()) {
-                      print('dwakjdakldwa');
+                    if (!state._formKey.currentState!.validate()) {
+                      print('Jest źle');
+                    } else {
+                      Navigator.pop(context);
+                      state.taskManager.addTask(state.taskTitle.text,
+                          state.taskDescription.text, state.ddVal);
+                      state._setState();
                     }
-                    Navigator.pop(context);
-                    state.taskManager.addTask(state.taskTitle.text,
-                        state.taskDescription.text, state.ddVal);
-                    state._setState();
                   },
                   child: const Text('Add task'),
                 ),
